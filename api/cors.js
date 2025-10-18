@@ -7,14 +7,20 @@ export default async function handler(req, res) {
       return res.status(204).end();
     }
 
+    // Set CORS headers for all responses
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
     if (req.method !== 'POST') {
       res.setHeader('Allow', 'POST, OPTIONS');
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { targetUrl, allowedOrigin, fetchMethod = 'POST', payload } = await req.json?.() || {};
+    // Parse the body correctly - req.body is already parsed by Vercel
+    const { targetUrl, allowedOrigin, fetchMethod = 'POST', payload } = req.body;
 
-    if (!targetUrl) return res.status(400).json({ error: 'Missing targetUrl' });
+    if (!targetUrl) {
+      return res.status(400).json({ error: 'Missing targetUrl' });
+    }
 
     const options = {
       method: fetchMethod.toUpperCase(),
@@ -32,9 +38,7 @@ export default async function handler(req, res) {
     const upstreamRes = await fetch(targetUrl, options);
     const text = await upstreamRes.text();
 
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin || '*');
     res.status(upstreamRes.status).send(text);
-
   } catch (err) {
     console.error(err);
     res.setHeader('Access-Control-Allow-Origin', '*');
